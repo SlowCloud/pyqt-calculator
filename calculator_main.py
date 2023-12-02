@@ -138,7 +138,7 @@ class Main(QDialog):
             return
         # 입력값이 없다면, 연산만 바꾼다.
         if equation == "":
-            self.cache[-1] = operation[0]
+            self.cache = self.cache[:-1] + operation
             return
         # 입력값이 있으면, 계산 후 캐시에 다시 저장한다.
         value = eval(self.cache + equation)
@@ -161,7 +161,7 @@ class Main(QDialog):
         self.equation.setText(equation)
 
     ### 단항연산자
-    def button_flip_clicked(self):
+    def unary_operation(self, fn):
         equation = self.equation.text()
         if equation == "":
             return
@@ -170,40 +170,19 @@ class Main(QDialog):
             n = eval(self.cache + equation)
         else:
             n = float(equation)
-        self.equation.setText(str(1/n))
+        self.equation.setText(str(fn(n)))
+
+    def button_flip_clicked(self):
+        self.unary_operation(lambda x: 1/x)
 
     def button_pow_clicked(self):
-        equation = self.equation.text()
-        if equation == "":
-            return
-        n = 0
-        if self.cache != "":
-            n = eval(self.cache + equation)
-        else:
-            n = float(equation)
-        self.equation.setText(str(n*n))
+        self.unary_operation(lambda x: x*x)
 
     def button_sqrt_clicked(self):
-        equation = self.equation.text()
-        if equation == "":
-            return
-        n = 0
-        if self.cache != "":
-            n = eval(self.cache + equation)
-        else:
-            n = float(equation)
-        self.equation.setText(str(math.sqrt(n)))
+        self.unary_operation(lambda x: math.sqrt(x))
 
     def button_reverse_clicked(self):
-        equation = self.equation.text()
-        if equation == "":
-            return
-        n = 0
-        if self.cache != "":
-            n = eval(self.cache + equation)
-        else:
-            n = float(equation)
-        self.equation.setText(str(-n))
+        self.unary_operation(lambda x: -x)
 
 
 
