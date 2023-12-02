@@ -1,12 +1,15 @@
 import sys
+import math
 from PyQt5.QtWidgets import *
 
 class Main(QDialog):
     def __init__(self):
         super().__init__()
         self.init_ui()
+        self.cache = "" # lvalue와 operation을 기억(이항연산)
 
     def init_ui(self):
+
         main_layout = QVBoxLayout()
 
         ### 각 위젯을 배치할 레이아웃을 미리 만들어 둠
@@ -20,6 +23,9 @@ class Main(QDialog):
         ### layout_equation_solution 레이아웃에 수식, 답 위젯을 추가
         layout_equation_solution.addRow(label_equation, self.equation)
 
+
+
+
         ### 사칙연상 버튼 생성
         button_plus = QPushButton("+")
         button_minus = QPushButton("-")
@@ -27,16 +33,19 @@ class Main(QDialog):
         button_division = QPushButton("/")
 
         # ### 사칙연산 버튼을 클릭했을 때, 각 사칙연산 부호가 수식창에 추가될 수 있도록 시그널 설정
-        # button_plus.clicked.connect(lambda state, operation = "+": self.button_operation_clicked(operation))
-        # button_minus.clicked.connect(lambda state, operation = "-": self.button_operation_clicked(operation))
-        # button_product.clicked.connect(lambda state, operation = "*": self.button_operation_clicked(operation))
-        # button_division.clicked.connect(lambda state, operation = "/": self.button_operation_clicked(operation))
+        button_plus.clicked.connect(lambda state, operation = "+": self.button_operation_clicked(operation))
+        button_minus.clicked.connect(lambda state, operation = "-": self.button_operation_clicked(operation))
+        button_product.clicked.connect(lambda state, operation = "*": self.button_operation_clicked(operation))
+        button_division.clicked.connect(lambda state, operation = "/": self.button_operation_clicked(operation))
 
         ### 사칙연산 버튼을 layout_operation 레이아웃에 추가
         layout_number.addWidget(button_plus, 5, 4)
         layout_number.addWidget(button_minus, 4, 4)
         layout_number.addWidget(button_product, 3, 4)
         layout_number.addWidget(button_division, 2, 4)
+
+
+
 
         ### =, clear, backspace 버튼 생성
         button_equal = QPushButton("=")
@@ -50,12 +59,21 @@ class Main(QDialog):
         layout_number.addWidget(button_C, 1, 3)
         layout_number.addWidget(button_backspace, 1, 4)
 
+        ### =, C, CE, backspace 버튼 클릭 시 시그널 설정
+        button_equal.clicked.connect(self.button_equal_clicked)
+        button_C.clicked.connect(self.button_clear_clicked)
+        button_CE.clicked.connect(self.button_clear_clicked)
+        button_backspace.clicked.connect(self.button_backspace_clicked)
+
+
+
+
         ### %, 1/x, x^2, x^0.5, +/-, . 버튼 생성
         button_mod = QPushButton("%")
         button_flip = QPushButton("1/x")
         button_pow = QPushButton("x^2")
         button_sqrt = QPushButton("x^0.5")
-        button_rev = QPushButton("+/-")
+        button_reverse = QPushButton("+/-")
         button_decimal = QPushButton(".")
 
         ### 버튼 추가
@@ -63,13 +81,20 @@ class Main(QDialog):
         layout_number.addWidget(button_flip, 2, 1)
         layout_number.addWidget(button_pow, 2, 2)
         layout_number.addWidget(button_sqrt, 2, 3)
-        layout_number.addWidget(button_rev, 6, 1)
+        layout_number.addWidget(button_reverse, 6, 1)
         layout_number.addWidget(button_decimal, 6, 3)
 
-        ### =, clear, backspace 버튼 클릭 시 시그널 설정
-        # button_equal.clicked.connect(self.button_equal_clicked)
-        # button_clear.clicked.connect(self.button_clear_clicked)
-        # button_backspace.clicked.connect(self.button_backspace_clicked)
+        ## %, 1/x, 아무튼 기능 추가
+
+        button_mod.clicked.connect(lambda state, operation="%": self.button_operation_clicked(operation))
+        button_decimal.clicked.connect(lambda state, operation=".": self.button_operation_clicked(operation))
+        button_flip.clicked.connect(self.button_flip_clicked)
+        button_pow.clicked.connect(self.button_pow_clicked)
+        button_sqrt.clicked.connect(self.button_sqrt_clicked)
+        button_reverse.clicked.connect(self.button_reverse_clicked)
+
+
+
 
         ### 숫자 버튼 생성하고, layout_number 레이아웃에 추가
         ### 각 숫자 버튼을 클릭했을 때, 숫자가 수식창에 입력 될 수 있도록 시그널 설정
@@ -84,6 +109,9 @@ class Main(QDialog):
             elif number==0:
                 layout_number.addWidget(number_button_dict[number], 6, 2)
 
+
+
+
         ### 각 레이아웃을 main_layout 레이아웃에 추가
         main_layout.addLayout(layout_equation_solution)
         main_layout.addLayout(layout_number)
@@ -94,6 +122,8 @@ class Main(QDialog):
     #################
     ### functions ###
     #################
+
+
     def number_button_clicked(self, num):
         equation = self.equation.text()
         equation += str(num)
@@ -101,22 +131,83 @@ class Main(QDialog):
 
     def button_operation_clicked(self, operation):
         equation = self.equation.text()
-        equation += operation
-        self.equation.setText(equation)
+        # 캐시가 비어 있으면 캐시로 넣는다.
+        if self.cache == "":
+            self.cache = equation + operation
+            self.equation.setText("")
+            return
+        # 입력값이 없다면, 연산만 바꾼다.
+        if equation == "":
+            self.cache[-1] = operation[0]
+            return
+        # 입력값이 있으면, 계산 후 캐시에 다시 저장한다.
+        value = eval(self.cache + equation)
+        self.cache = str(value) + operation
+        self.equation.setText("")
 
     def button_equal_clicked(self):
         equation = self.equation.text()
-        solution = eval(equation)
-        self.solution.setText(str(solution))
+        solution = eval(self.cache + equation)
+        self.cache = ""
+        self.equation.setText(str(solution))
 
     def button_clear_clicked(self):
+        self.cache = ""
         self.equation.setText("")
-        self.solution.setText("")
 
     def button_backspace_clicked(self):
         equation = self.equation.text()
         equation = equation[:-1]
         self.equation.setText(equation)
+
+    ### 단항연산자
+    def button_flip_clicked(self):
+        equation = self.equation.text()
+        if equation == "":
+            return
+        n = 0
+        if self.cache != "":
+            n = eval(self.cache + equation)
+        else:
+            n = float(equation)
+        self.equation.setText(str(1/n))
+
+    def button_pow_clicked(self):
+        equation = self.equation.text()
+        if equation == "":
+            return
+        n = 0
+        if self.cache != "":
+            n = eval(self.cache + equation)
+        else:
+            n = float(equation)
+        self.equation.setText(str(n*n))
+
+    def button_sqrt_clicked(self):
+        equation = self.equation.text()
+        if equation == "":
+            return
+        n = 0
+        if self.cache != "":
+            n = eval(self.cache + equation)
+        else:
+            n = float(equation)
+        self.equation.setText(str(math.sqrt(n)))
+
+    def button_reverse_clicked(self):
+        equation = self.equation.text()
+        if equation == "":
+            return
+        n = 0
+        if self.cache != "":
+            n = eval(self.cache + equation)
+        else:
+            n = float(equation)
+        self.equation.setText(str(-n))
+
+
+
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
